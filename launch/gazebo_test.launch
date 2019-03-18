@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<launch>
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="world_name" value="$(find gazebo_test)/world/warehouse.world"/> <!-- Note: the world_name is with respect to GAZEBO_RESOURCE_PATH environmental variable -->
+        <arg name="paused" value="false"/>
+        <arg name="use_sim_time" value="true"/>
+        <arg name="gui" value="true"/>
+        <arg name="headless" value="false"/> <!-- Inert - see gazebo_ros_pkgs issue #491 -->
+        <arg name="recording" value="false"/>
+        <arg name="debug" value="false"/>
+    </include>
+    <!-- Load the URDF into the ROS Parameter Server -->
+    <param name="robot_description"
+            command="$(find xacro)/xacro.py '$(find gazebo_test)/urdf/model.xacro'" />
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
+
+    <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
+
+
+    <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
+        args="-urdf -model robot1 -param robot_description -z 0.05"/>
+
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find gazebo_test)/config.rviz"/>
+
+    <node name="slam_gmapping" pkg="gmapping" type="slam_gmapping">
+   
+        <param name="base_link" value="base_footprint"/>
+    </node>
+
+    <node pkg="map_server" name="map_server" type="map_server" args="$(find gazebo_test)/map/map.yaml" output="screen" />
+
+<!--    <include file="$(find amcl)/examples/amcl_diff.launch" />   --> 
+        
+
+    <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+        <param name="controller_frequency" value="10.0"/>
+        <param name="controller_patiente" value="15.0"/>
+        <rosparam file="$(find gazebo_test)/launch/costmap_common_params.yaml" command="load" ns="global_costmap" />
+        <rosparam file="$(find gazebo_test)/launch/costmap_common_params.yaml" command="load" ns="local_costmap" />
+        <rosparam file="$(find gazebo_test)/launch/local_costmap_params.yaml" command="load" />
+        <rosparam file="$(find gazebo_test)/launch/global_costmap_params.yaml" command="load" />
+        <rosparam file="$(find gazebo_test)/launch/base_local_planner_params.yaml" command="load" />
+        
+    </node>
+
+
+</launch>
